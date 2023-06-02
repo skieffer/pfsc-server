@@ -168,17 +168,19 @@ json_grammar = r"""
     json_array  : "[" [json_value ("," json_value)*] ","? "]"
     json_object : "{" [json_pair ("," json_pair)*] ","? "}"
     json_pair   : (json_cname|ve_string) ":" json_value
-    ve_string : TRIPLE_QUOTE_STRING|TRIPLE_APOS_STRING|ESCAPED_STRING|APOS_STRING
+    ve_string : ve3 | ve1
+    ?ve3.2 : TRIPLE_QUOTE_STRING|TRIPLE_APOS_STRING
+    ?ve1.1 : QUOTE_STRING|APOS_STRING
     json_cname: CNAME
     json_libpath: CNAME ("." CNAME)*
 """
 
 json_grammar_imports = """
-    TRIPLE_APOS_STRING.2 : "'''" /'?'?[^']/* "'''"
-    TRIPLE_QUOTE_STRING.2 : "\\"\\"\\"" /"?"?[^"]/* "\\"\\"\\""
+    TRIPLE_APOS_STRING : "'''" /'?'?[^']/* "'''"
+    TRIPLE_QUOTE_STRING : "\\"\\"\\"" /"?"?[^"]/* "\\"\\"\\""
     APOS_STRING : "'" ("\\'"|/[^']/)* "'"
+    QUOTE_STRING : "\\"" ("\\\\\\""|/[^"]/)* "\\""
     %import common.CNAME
-    %import common.ESCAPED_STRING
     %import common.SIGNED_INT
     %import common.SIGNED_FLOAT
     %import common.WS
