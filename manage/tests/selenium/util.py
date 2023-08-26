@@ -183,7 +183,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     t0 = time.time()
     for i in range(11):
         t1 = time.time()
-        p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0))}.png'
+        p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0)):04d}.png'
         driver.save_screenshot(p)
         time.sleep(0.1)
 
