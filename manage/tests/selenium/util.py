@@ -179,13 +179,24 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     driver.switch_to.window(v["root"])
     # User menu text should now say our username
 
+    #####################################
     # XXX
+
     t0 = time.time()
-    for i in range(11):
+    for i in range(101):
         t1 = time.time()
-        p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0)):04d}.png'
-        driver.save_screenshot(p)
-        time.sleep(0.1)
+        menu_label = driver.find_element(by=By.ID, value="dijit_PopupMenuBarItem_8_text").text
+        logger.debug(f'Menu label at {int(1000*(t1 - t0))}ms: {menu_label}')
+        time.sleep(0.01)
+
+    #t0 = time.time()
+    #for i in range(11):
+    #    t1 = time.time()
+    #    p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0)):04d}.png'
+    #    driver.save_screenshot(p)
+    #    time.sleep(0.1)
+
+    ######################################
 
     WebDriverWait(driver, wait).until(expected_conditions.text_to_be_present_in_element((By.ID, "dijit_PopupMenuBarItem_8_text"), f"test.{user}"))
     assert driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").text == f"test.{user}"
