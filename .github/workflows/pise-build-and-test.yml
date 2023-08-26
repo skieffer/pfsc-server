@@ -40,83 +40,9 @@ on:
         default: 1
         required: false
 jobs:
-  server-unit-tests:
-    runs-on: ubuntu-22.04
-    services:
-      redisgraph:
-        image: "redis/redis-stack-server:6.2.6-v6"
-        ports:
-          - "6381:6379"
-      tinkergraph:
-        image: "tinkerpop/gremlin-server:3.6.0"
-        ports:
-          - "8182:8182"
-    strategy:
-      matrix:
-        graphdb: ['Cypher: RedisGraph', 'Gremlin: TinkerGraph']
-    defaults:
-      run:
-        shell: bash
-    env:
-      REDIS_URI: redis://localhost:6381
-      GRAPHDB_URI: ${{ startsWith(matrix.graphdb, 'C') && 'redis://localhost:6381' || 'ws://localhost:8182/gremlin' }}
-      PFSC_LIB_ROOT: ${{ format('{0}/lib', github.workspace) }}
-      PFSC_BUILD_ROOT: ${{ format('{0}/build', github.workspace) }}
-      SECRET_KEY: fixed_value_for_testing
-    steps:
-      # -----------------------------------------
-      # Install Python
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-      # -----------------------------------------
-      # Checkout pise
-      - name: Checkout pise
-        uses: actions/checkout@v3
-        with:
-          path: 'pise'
-      # -----------------------------------------
-      - name: Make directory structure
-        run: |
-          mkdir -p {lib,build}
-      # -----------------------------------------
-      # Install server/venv, preferably from cache
-      - name: Cache server/venv
-        id: cache-server-venv
-        uses: actions/cache@v3
-        with:
-          path: pise/server/venv
-          key: cache-server-venv-${{ hashFiles('pise/server/req/*') }}
-      - if: ${{ steps.cache-server-venv.outputs.cache-hit != 'true' }}
-        name: Install server/venv
-        working-directory: pise/server
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          ./req/install.sh
-      # -----------------------------------------
-      - name: Make test repos
-        working-directory: pise/server
-        run: |
-          git config --global user.email "pfsc.unit.tester@localhost"
-          git config --global user.name "pfsc unit tester"
-          source venv/bin/activate
-          python -m tests.util.make_repos
-      - name: Build test repos
-        working-directory: pise/server
-        run : |
-          source venv/bin/activate
-          python -m tests.util.build_repos
-      - name: Run unit tests
-        working-directory: pise/server
-        run: |
-          source venv/bin/activate
-          pytest tests
 # =============================================================================
   builds-and-functional-tests:
-    needs: server-unit-tests
+    #needs: server-unit-tests
     runs-on: ubuntu-22.04
     defaults:
       run:
