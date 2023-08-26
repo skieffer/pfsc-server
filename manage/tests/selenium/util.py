@@ -178,26 +178,29 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     driver.close()
     driver.switch_to.window(v["root"])
     # User menu text should now say our username
-
     #####################################
-    # XXX
-
+    # Had a spate of random timeout failures on the `WebDriverWait` line below,
+    # where we wait for the label on the user menu to change to the username.
+    # Failed about 1 time out of 10, and cannot be made to happen except by chance.
+    # So I'm actively sampling the menu text, with diagnostic logging, in hopes
+    # of catching it failing.
+    # A failure would be represented by the label taking 1s or more to change,
+    # since that is the `wait` time we want to give it.
     t0 = time.time()
     for i in range(101):
         t1 = time.time()
+        dt = t1 - t0
         menu_label = driver.find_element(by=By.ID, value="dijit_PopupMenuBarItem_8_text").text
-        logger.debug(f'Menu label at {int(1000*(t1 - t0))}ms: {menu_label}')
+        logger.debug(f'Menu label at {int(1000*dt)}ms: {menu_label}')
+        # If it has already changed, no sense continuing to log.
+        if menu_label == f"test.{user}":
+            break
+        # Want to actually fail if it takes 1s or more, so I'll notice.
+        if dt >= 1:
+            logger.debug('Menu label took 1s or more to change!')
+            assert False
         time.sleep(0.01)
-
-    #t0 = time.time()
-    #for i in range(11):
-    #    t1 = time.time()
-    #    p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0)):04d}.png'
-    #    driver.save_screenshot(p)
-    #    time.sleep(0.1)
-
     ######################################
-
     WebDriverWait(driver, wait).until(expected_conditions.text_to_be_present_in_element((By.ID, "dijit_PopupMenuBarItem_8_text"), f"test.{user}"))
     assert driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").text == f"test.{user}"
     logger.info(f"Logged in as test.{user}")
