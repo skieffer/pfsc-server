@@ -547,6 +547,17 @@ def logins_are_possible():
     """
     Say whether there is any way to log in, under the current configuration.
     """
+
+    print("%" * 80)
+    print('Login config:')
+    c = {v: current_app.config[v] for v in [
+        "ALLOW_GITHUB_LOGINS",
+        "ALLOW_BITBUCKET_LOGINS",
+        "ALLOW_TEST_REPO_LOGINS",
+    ]}
+    for k, v in c.items():
+        print(f'  {k}: {v}')
+
     return any(
         current_app.config[v] for v in [
             "ALLOW_GITHUB_LOGINS",
@@ -750,6 +761,11 @@ class AppLoader(Handler):
             'loginsPossible': logins_are_possible(),
             'pdfjsURL': url_for('static', filename='pdfjs/vVERSION/web/viewer.html'),
         }
+
+        print("%" * 80)
+        print('Served state:')
+        for k, v in state.items():
+            print(f'  {k}: {v}')
 
         if current_app.config["IS_OCA"]:
             with open(current_app.config["OCA_VERSION_FILE"]) as f:
