@@ -150,7 +150,11 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     """
     logger = logging.getLogger(logger_name)
     v = {}
-    
+
+    # XXX
+    screenshot_dir = pathlib.Path(PFSC_ROOT) / 'selenium_results' / 'screenshots'
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+
     def wait_for_window(wait=BASIC_WAIT):
         time.sleep(wait)
         wh_now = driver.window_handles
@@ -174,6 +178,15 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     driver.close()
     driver.switch_to.window(v["root"])
     # User menu text should now say our username
+
+    # XXX
+    t0 = time.time()
+    for i in range(11):
+        t1 = time.time()
+        p = screenshot_dir / f'waiting_for_username_{int(1000*(t1 - t0))}.png'
+        driver.save_screenshot(p)
+        time.sleep(0.1)
+
     WebDriverWait(driver, wait).until(expected_conditions.text_to_be_present_in_element((By.ID, "dijit_PopupMenuBarItem_8_text"), f"test.{user}"))
     assert driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").text == f"test.{user}"
     logger.info(f"Logged in as test.{user}")
