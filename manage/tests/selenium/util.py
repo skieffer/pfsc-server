@@ -34,6 +34,16 @@ from manage import PFSC_ROOT
 BASIC_WAIT = pfsc_conf.SEL_BASIC_WAIT
 
 
+def ts(msg):
+    """
+    Prefix a message with a timestamp.
+
+    To make the timestamps more easily comparable with those from the browser's
+    console, we multiply by 1000.
+    """
+    return f'{time.time()*1000}: {msg}'
+
+
 def make_driver():
     """
     Construct a driver, with options such as:
@@ -51,6 +61,18 @@ def make_driver():
             options.add_argument('--headless')
         if pfsc_conf.SEL_STAY_OPEN:
             options.add_experimental_option("detach", True)
+
+        # Enable reading the browser's console logs at all levels:
+        # https://stackoverflow.com/a/66466176
+        # https://stackoverflow.com/a/20910684
+        options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
+
+        # There is a way to make the devtools open, but it's *not* necessary
+        # just in order for the console logs to be available.
+        # https://stackoverflow.com/a/71724833
+        # https://stackoverflow.com/a/68745841
+        #options.add_argument('auto-open-devtools-for-tabs')
+
         return webdriver.Chrome(options=options)
     elif browser == "FIREFOX":
         options = FirefoxOptions()
@@ -161,7 +183,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
         wh_then = v["window_handles"]
         if len(wh_now) > len(wh_then):
             return set(wh_now).difference(set(wh_then)).pop()
-    logger.info("Logging in...")
+    logger.info(ts("Logging in..."))
     # Click the user menu
     driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").click()
     v["window_handles"] = driver.window_handles
@@ -174,8 +196,17 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     driver.find_element(By.NAME, "username").click()
     driver.find_element(By.NAME, "username").send_keys(user)
     driver.find_element(By.NAME, "password").send_keys(user)
+    logger.debug(ts("Before log-in click"))
     driver.find_element(By.CSS_SELECTOR, "p > input").click()
+
+    # Maybe we are closing the login window before it can send the signal to
+    # the main window to update the login state? Is this why the test is sometimes
+    # failing on the GH testrunner?
+    #logger.debug(ts("After log-in click"))
+    #time.sleep(3)
     driver.close()
+    logger.debug(ts("After close log-in window"))
+
     driver.switch_to.window(v["root"])
     # User menu text should now say our username
     #####################################
@@ -198,6 +229,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
         # Want to actually fail if it takes 1s or more, so I'll notice.
         if dt >= 1:
             logger.debug('Menu label took 1s or more to change!')
+            log_browser_console(driver)
             assert False
         time.sleep(0.01)
     ######################################
@@ -325,8 +357,14 @@ def click_nth_context_menu_option(driver, elt_sel, menu_table_id, n, label, logg
     menu_option.click()
 
 
-def log_browser_console(driver, logger_name='root'):
+def log_browser_console(driver, logger_name='root', wait=5):
     logger = logging.getLogger(logger_name)
+
+    # Allow time for console entries to become available:
+    if wait:
+        logger.debug(f'Giving {wait}s for browser console entries to become available...')
+        time.sleep(wait)
+
     entries = list(driver.get_log('browser'))
     logger.debug(f"Found {len(entries)} browser console entries.")
     if entries:
@@ -354,6 +392,10 @@ class Tester:
             self.driver.save_screenshot(p)
             self.logger.debug(f"Recorded final screenshot at {p}")
 
+        # Note: I'm keeping this option here, but it is better to put a call
+        # to `self.log_browser_console()` at the end of each test that wants
+        # console logging. This is because the printing below won't go to the
+        # log (and I tried logging here, but it didn't work).
         if pfsc_conf.SEL_PRINT_FINAL_BROWSER_CONSOLE_ENTRIES:
             entries = list(self.driver.get_log('browser'))
             print()
@@ -419,5 +461,5 @@ class Tester:
     def click_nth_context_menu_option(self, elt_sel, menu_table_id, n, label):
         return click_nth_context_menu_option(self.driver, elt_sel, menu_table_id, n, label, logger_name=self.logger_name)
 
-    def log_browser_console(self):
-        log_browser_console(self.driver, logger_name=self.logger_name)
+    def log_browser_console(self, wait=5):
+        log_browser_console(self.driver, logger_name=self.logger_name, wait=wait)

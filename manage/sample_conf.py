@@ -155,7 +155,7 @@ SEL_BASIC_WAIT = 20
 # Take final screenshot?
 SEL_TAKE_FINAL_SCREENSHOT = True
 # Print browser console entries?
-SEL_PRINT_FINAL_BROWSER_CONSOLE_ENTRIES = True
+SEL_PRINT_FINAL_BROWSER_CONSOLE_ENTRIES = False
 # Run browser headless?
 SEL_HEADLESS = True
 # If not headless, keep browser open after test runs?
