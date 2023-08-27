@@ -196,24 +196,41 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     logger.debug(ts("Before log-in click"))
     driver.find_element(By.CSS_SELECTOR, "p > input").click()
 
-    # Maybe we are closing the login window before it can send the signal to
-    # the main window to update the login state? Is this why the test is sometimes
-    # failing on the GH testrunner?
+    # Before we close the login window, pause to allow time for the login to
+    # take place. The following things need to happen: (1) the server receives
+    # the login request; (2) the server sends back a 302 redirecting us to the
+    # login-success page; (3) we request the login-success page; (4) some JS
+    # on the login-success page emits a login-success event over BroadcastChannel.
+    # After that, it is okay to close the login window. The main window will
+    # hear the login-success event, which is what prompts it to issue a `whoAmI`
+    # request to the server, to find out which user it is now logged in as, and
+    # then it updates the User menu accordingly.
+    #
+    # Probably half a second would be plenty of time, but we err on the generous
+    # side, giving it 3 seconds.
+    #
+    # On 230826, we started having intermittent failures (maybe one in five runs
+    # or so), where it seems we were closing the login window too quickly. We
+    # had no delay here whatsoever. The web server logs showed that we were
+    # getting the 302 redirect (so, successful login) and we requested the
+    # login-success page, but we never made the `whoAmI` request. This suggests
+    # that we were closing the login window before it had a chance to emit the
+    # login-success event over BroadcastChannel. Note that that event's triggering
+    # of `Hub.updateUser()` is necessary here, because there will be no `focus` event
+    # on the main window (which also would trigger `Hub.updateUser()`) during headless
+    # execution of Chrome via Chromedriver.
     logger.debug(ts("After log-in click"))
     time.sleep(3)
     driver.close()
     logger.debug(ts("After close log-in window"))
-
     driver.switch_to.window(v["root"])
+
     # User menu text should now say our username
-    #####################################
-    # Had a spate of random timeout failures on the `WebDriverWait` line below,
-    # where we wait for the label on the user menu to change to the username.
-    # Failed about 1 time out of 10, and cannot be made to happen except by chance.
-    # So I'm actively sampling the menu text, with diagnostic logging, in hopes
-    # of catching it failing.
-    # A failure would be represented by the label taking 1s or more to change,
-    # since that is the `wait` time we want to give it.
+    # Instead of just relying on `WebDriverWait()` to do the waiting for us,
+    # we give the menu one second to update, and, if it fails to do so, we
+    # err out but only after logging the browser console. This is so we can look
+    # for debug messages there, issued by the `Hub` when it checks the user login
+    # state.
     t0 = time.time()
     for i in range(101):
         t1 = time.time()
@@ -229,7 +246,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
             log_browser_console(driver, logger_name=logger_name)
             assert False
         time.sleep(0.01)
-    ######################################
+
     WebDriverWait(driver, wait).until(expected_conditions.text_to_be_present_in_element((By.ID, "dijit_PopupMenuBarItem_8_text"), f"test.{user}"))
     assert driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").text == f"test.{user}"
     logger.info(f"Logged in as test.{user}")
@@ -357,7 +374,9 @@ def click_nth_context_menu_option(driver, elt_sel, menu_table_id, n, label, logg
 def log_browser_console(driver, logger_name='root', wait=5):
     logger = logging.getLogger(logger_name)
 
-    # Allow time for console entries to become available:
+    # Allow time for console entries to become available.
+    # Don't know how many seconds are really needed, but I found that with no
+    # delay at all, we were getting no console entries, even when they were present.
     if wait:
         logger.debug(f'Giving {wait}s for browser console entries to become available...')
         time.sleep(wait)
