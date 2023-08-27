@@ -199,8 +199,8 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     # Maybe we are closing the login window before it can send the signal to
     # the main window to update the login state? Is this why the test is sometimes
     # failing on the GH testrunner?
-    #logger.debug(ts("After log-in click"))
-    #time.sleep(3)
+    logger.debug(ts("After log-in click"))
+    time.sleep(3)
     driver.close()
     logger.debug(ts("After close log-in window"))
 
