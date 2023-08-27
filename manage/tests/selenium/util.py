@@ -226,7 +226,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
         # Want to actually fail if it takes 1s or more, so I'll notice.
         if dt >= 1:
             logger.debug('Menu label took 1s or more to change!')
-            log_browser_console(driver)
+            log_browser_console(driver, logger_name=logger_name)
             assert False
         time.sleep(0.01)
     ######################################
