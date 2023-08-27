@@ -173,16 +173,13 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     logger = logging.getLogger(logger_name)
     v = {}
 
-    # XXX
-    screenshot_dir = pathlib.Path(PFSC_ROOT) / 'selenium_results' / 'screenshots'
-    screenshot_dir.mkdir(parents=True, exist_ok=True)
-
     def wait_for_window(wait=BASIC_WAIT):
         time.sleep(wait)
         wh_now = driver.window_handles
         wh_then = v["window_handles"]
         if len(wh_now) > len(wh_then):
             return set(wh_now).difference(set(wh_then)).pop()
+
     logger.info(ts("Logging in..."))
     # Click the user menu
     driver.find_element(By.ID, "dijit_PopupMenuBarItem_8_text").click()
