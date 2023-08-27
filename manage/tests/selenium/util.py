@@ -210,8 +210,10 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
     # side, giving it 3 seconds.
     #
     # On 230826, we started having intermittent failures (maybe one in five runs
-    # or so), where it seems we were closing the login window too quickly. We
-    # had no delay here whatsoever. The web server logs showed that we were
+    # or so), where it seems we were closing the login window too quickly. At that
+    # time, we actually had no delay here whatsoever before closing the window.
+    #
+    # The web server logs showed that we were
     # getting the 302 redirect (so, successful login) and we requested the
     # login-success page, but we never made the `whoAmI` request. This suggests
     # that we were closing the login window before it had a chance to emit the
@@ -240,7 +242,7 @@ def login_as_test_user(driver, user, wait=BASIC_WAIT, logger_name='root'):
         # If it has already changed, no sense continuing to log.
         if menu_label == f"test.{user}":
             break
-        # Want to actually fail if it takes 1s or more, so I'll notice.
+        # If it takes 1s or more, fail after logging browser console.
         if dt >= 1:
             logger.debug('Menu label took 1s or more to change!')
             log_browser_console(driver, logger_name=logger_name)
