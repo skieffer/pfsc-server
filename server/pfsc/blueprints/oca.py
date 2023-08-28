@@ -84,6 +84,10 @@ def latest_version():
     # so we can make all lists comparable by prepending [26, 0] to the new ones.
     string_parts = [(re.split(r'[.-]', n), n) for n in names]
 
+    # XXX
+    print('Existing OCA versions:')
+    print(string_parts)
+
     int_parts_padded = []
     for parts, name in string_parts:
         if len(parts) > 4:
